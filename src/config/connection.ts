@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+
 export const connectDb = () => {
 
     const mongoUri: string = process.env.MONGO_URI || 'defaultMongoUri';
