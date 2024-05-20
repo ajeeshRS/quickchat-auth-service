@@ -6,37 +6,51 @@ import axios from "axios"
 export const signUp = async (req: Request, res: Response) => {
     try {
 
-        const { userName, email, password } = req.body
+        const { userName, email, password, googleId } = req.body
 
-        if (!userName || !email || !password) {
+        if (!userName || !email || (!password && !googleId)) {
             return res.status(400).json("All fields are mandatory")
         }
-        const userData = {
-            userName: userName,
-            email: email
+
+        const existingUser = await user.findOne({ email })
+        if (existingUser) {
+            return res.status(400).json("User already exists!")
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10)
+        // hash the password if provided
+        let hashedPassword;
+        if (password) {
+            hashedPassword = await bcrypt.hash(password, 10)
+        }
 
-        user.create({
+        const userData = {
             userName,
             email,
-            password: hashedPassword
-        })
-            .then(async () => {
-                res.status(200).json("Signup success")
-                await axios.post(`${process.env.USER_SERVICE_URL}/signup`, userData)
+            password: hashedPassword,
+            ...(googleId && { googleId })
+        }
 
-            })
-            .catch((err) => {
-                if (err.errorResponse.code === 11000) {
-                    return res.status(400).json("User already exist !")
-                } else {
-                    return res.status(400).json("Couldn't signup")
-                }
-            })
+        await user.create(userData)
+
+        // for sending to user service
+        const userProfileData = {
+            userName: userName,
+            email: email,
+            googleId: googleId
+        }
+        try {
+            await axios.post(`${process.env.USER_SERVICE_URL}/signup`, userProfileData)
+
+        } catch (profileErr) {
+            console.error('Error creating profile', profileErr)
+            return res.status(500).json("Error creating in user profile")
+        }
+
+        res.status(201).json("Signup success")
+
     } catch (err) {
-        console.log(err)
+        console.error("Error in signing up", err)
+        return res.status(500).json("Couldn't signup")
     }
 }
 
