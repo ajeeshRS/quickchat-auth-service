@@ -3,6 +3,10 @@ import bcrypt from "bcrypt"
 import { user } from "../models/userModel"
 import axios from "axios"
 import jwt from "jsonwebtoken"
+import { generateOtp, sendEmail } from "../utils/utils";
+import nodeCache from "node-cache"
+
+const otpCache = new nodeCache({ stdTTL: 300, checkperiod: 60 })
 
 export const signUp = async (req: Request, res: Response) => {
     try {
@@ -95,4 +99,71 @@ export const login = async (req: Request, res: Response) => {
     }
 }
 
+export const sendOtp = async (req: Request, res: Response) => {
+    try {
+        const { email } = req.body
+        if (!email) {
+            return res.status(400).json("Email is mandatory")
+        }
+        const isValidUser = await user.findOne({ email: email })
 
+        if (!isValidUser) {
+            return res.status(404).json("Email is not registered with us")
+        }
+
+        const otp = generateOtp()
+        sendEmail(email, otp)
+        otpCache.set(email, otp)
+        res.status(200).json("OTP has been sent to your email")
+
+    } catch (err) {
+        res.status(500).json("Couldn't send otp")
+        console.error("Error sending otp", err)
+    }
+}
+
+export const verifyOtp = async (req: Request, res: Response) => {
+    try {
+        const { otp, email } = req.body
+        const storedOtp = otpCache.get(email)
+
+        if (otp !== storedOtp) {
+            return res.status(401).json("Incorrect otp")
+        }
+
+        res.status(200).json("Success")
+
+    } catch (err) {
+        console.error(err)
+    }
+}
+
+export const resetPassword = async (req: Request, res: Response) => {
+    try {
+        const { email, password } = req.body
+
+        if (!email) {
+            return res.status(400).json("Email is mandatory")
+        }
+        if (!password) {
+            return res.status(400).json("Password is mandatory")
+        }
+
+        const existingUser = await user.findOne({ email: email })
+
+        if (!existingUser) {
+            return res.status(404).json("User not found")
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10)
+
+        existingUser.password = hashedPassword
+        await existingUser.save()
+
+        res.status(200).json("Password reset success")
+
+    } catch (err) {
+        res.status(500).json("Couldn't reset")
+        console.error(err)
+    }
+}
