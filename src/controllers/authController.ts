@@ -22,6 +22,14 @@ export const signUp = async (req: Request, res: Response) => {
             return res.status(400).json("User already exists!")
         }
 
+        if (googleId) {
+            const existingUserByGoogleId = await user.findOne({ googleId });
+            if (existingUserByGoogleId) {
+                return res.status(400).json("User with this Google ID already exists!");
+            }
+        }
+
+
         // hash the password if provided
         let hashedPassword;
         if (password) {
