@@ -92,7 +92,8 @@ export const login = async (req: Request, res: Response) => {
 
             const token = jwt.sign({
                 user: {
-                    email: existingUser.email
+                    email: existingUser.email,
+                    userName: existingUser.userName
                 }
             }, jwtSecret, { expiresIn: '3d' })
 
@@ -173,5 +174,26 @@ export const resetPassword = async (req: Request, res: Response) => {
     } catch (err) {
         res.status(500).json("Couldn't reset")
         console.error(err)
+    }
+}
+
+export const verifyJwt = async (req: Request, res: Response) => {
+    try {
+        const jwtSecret: string = process.env.JWT_SECRET as string
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json("No token is provided")
+        }
+
+        jwt.verify(token, jwtSecret, (err, decoded) => {
+            if (err) {
+                console.log(err)
+                return res.status(401).json("Jwt verification failed")
+            }
+
+            res.status(200).json({ message: "Token verified", decoded })
+        })
+    } catch (err) {
+        res.status(500).json("Internal server error")
     }
 }

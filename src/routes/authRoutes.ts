@@ -1,5 +1,5 @@
 import express from "express"
-import { login, resetPassword, sendOtp, signUp, verifyOtp } from "../controllers/authController"
+import { login, resetPassword, sendOtp, signUp, verifyJwt, verifyOtp } from "../controllers/authController"
 import rateLimit from "express-rate-limit"
 
 const router = express.Router()
@@ -19,6 +19,8 @@ router.post("/send-otp", sendOtp)
 router.post("/verify-otp", limiter, verifyOtp)
 
 router.post("/reset-password", resetPassword)
+
+router.get("/verify-jwt", verifyJwt)
 
 
 
