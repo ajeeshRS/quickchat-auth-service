@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt"
 import { user } from "../models/userModel"
-import axios from "axios"
 import jwt from "jsonwebtoken"
 import { generateOtp, sendEmail } from "../utils/utils";
 import nodeCache from "node-cache"
+import { userServiceApi } from "../config/axiosConfig";
 
 const otpCache = new nodeCache({ stdTTL: 300, checkperiod: 60 })
 
@@ -52,7 +52,7 @@ export const signUp = async (req: Request, res: Response) => {
             googleId: googleId
         }
         try {
-            await axios.post(`${process.env.USER_SERVICE_URL}/signup`, userProfileData)
+            await userServiceApi.post('/signup', userProfileData)
 
         } catch (profileErr) {
             console.error('Error creating profile', profileErr)
@@ -92,8 +92,8 @@ export const login = async (req: Request, res: Response) => {
 
             const token = jwt.sign({
                 user: {
+                    id: existingUser._id,
                     email: existingUser.email,
-                    userName: existingUser.userName
                 }
             }, jwtSecret, { expiresIn: '3d' })
 
