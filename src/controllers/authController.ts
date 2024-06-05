@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken"
 import { generateOtp, sendEmail } from "../utils/utils";
 import nodeCache from "node-cache"
 import { userServiceApi } from "../config/axiosConfig";
+import { produceMessage } from "../utils/kafka/auth-producer";
 
 const otpCache = new nodeCache({ stdTTL: 300, checkperiod: 60 })
 
@@ -52,7 +53,8 @@ export const signUp = async (req: Request, res: Response) => {
             googleId: googleId
         }
         try {
-            await userServiceApi.post('/signup', userProfileData)
+            // await userServiceApi.post('/signup', userProfileData)
+            await produceMessage('user-profile', userProfileData)
 
         } catch (profileErr) {
             console.error('Error creating profile', profileErr)

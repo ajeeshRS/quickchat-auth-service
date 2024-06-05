@@ -2,7 +2,7 @@ import { kafka } from "../../config/kafkaConfig"
 
 const producer = kafka.producer()
 
-export const productMessage = async (topic: string, message: Record<string, any>) => {
+export const produceMessage = async (topic: string, message: Record<string, any>) => {
     try {
         await producer.connect()
         await producer.send({
